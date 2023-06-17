@@ -30,7 +30,6 @@ export class CoursesCardListComponent implements OnInit, OnChanges {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        console.log(changes);
 
     }
 

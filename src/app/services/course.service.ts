@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/firestore';
-import { Observable, from } from 'rxjs';
+import { Observable, from, throwError } from 'rxjs';
 import { Course } from '../model/course';
-import { concatMap, map } from 'rxjs/operators';
+import { catchError, concatMap, map } from 'rxjs/operators';
 import { convertSnaps } from './db-utils';
 import { Lesson } from '../model/lesson';
+import firebase from 'firebase';
+import OrderByDirection = firebase.firestore.OrderByDirection;
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +14,30 @@ import { Lesson } from '../model/lesson';
 export class CourseService {
 
   constructor(private db: AngularFirestore) { }
+
+  findLessons(courseId: string, sortOrder: OrderByDirection = 'asc', pageNumber = 0, pageSize = 3): Observable<Lesson[]> {
+    return this.db.collection(`courses/${courseId}/lessons`,
+      ref => ref.orderBy('seqNo', sortOrder)
+        .limit(pageSize)
+        .startAfter(pageSize * pageNumber))
+      .get()
+      .pipe(map(results => convertSnaps<Lesson>(results)))
+  }
+
+  findCourseByUrl(courseUrl: string) {
+    return this.db.collection('courses', ref => ref.where('url', '==', courseUrl))
+      .get()
+      .pipe(
+        map(results => {
+          const courses = convertSnaps<Course>(results);
+          return courses.length == 1 ? courses[0] : null;
+        }),
+        catchError(err => {
+          alert(err);
+          return throwError(err);
+        })
+      )
+  }
 
   deleteCourseAndLessons(courseId: string) {
 
